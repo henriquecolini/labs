@@ -7,6 +7,8 @@ use list::List;
 struct RulesApp {
     rules: Rules,
     grades: Vec<String>,
+    teachers: Vec<String>,
+    subjects: Vec<String>
 }
 
 const RULES_PATH: &str = "input/rules.json";
@@ -14,13 +16,17 @@ const SCHOOL_PATH: &str = "input/school.html";
 
 impl RulesApp {
     fn new() -> Self {
-        let mut grades: Vec<_> = load_school(SCHOOL_PATH)
-            .map(|school| school.grades().map(|grade| grade.name.to_owned()).collect())
+        let (mut grades, mut teachers, mut subjects): (Vec<_>, Vec<_>, Vec<_>) = load_school(SCHOOL_PATH)
+            .map(|school| (school.grades().map(|grade| grade.name.to_owned()).collect(), school.teachers().map(|teacher| teacher.name.to_owned()).collect(), school.subjects().map(|subject| subject.name.to_owned()).collect()))
             .unwrap_or_default();
         grades.sort();
+        teachers.sort();
+        subjects.sort();
         Self {
             rules: load_rules(RULES_PATH).unwrap_or_default(),
             grades,
+            teachers,
+            subjects
         }
     }
 
@@ -41,12 +47,24 @@ impl eframe::App for RulesApp {
     
                         List::new("Matérias").show_vec_default(ui, &mut lab.classes, |ui, (class_idx, class)| {
                             ui.horizontal(|ui| {
-                                ui.text_edit_singleline(&mut class.subject);
+                                egui::ComboBox::from_id_salt(format!("subject_{lab_idx}_{class_idx}"))
+                                    .selected_text(class.subject.clone())
+                                    .show_ui(ui, |ui| {
+                                        for option in &self.subjects {
+                                            ui.selectable_value(&mut class.subject, option.to_string(), option);
+                                        }
+                                    });
                             });
 
                             List::new("Professores").show_vec_default(ui, &mut class.teachers, |ui, (teacher_idx, teacher)| {
                                 ui.horizontal(|ui| {
-                                    ui.text_edit_singleline(&mut teacher.name);
+                                    egui::ComboBox::from_id_salt(format!("teacher_{lab_idx}_{class_idx}_{teacher_idx}"))
+                                        .selected_text(teacher.name.clone())
+                                        .show_ui(ui, |ui| {
+                                            for option in &self.teachers {
+                                                ui.selectable_value(&mut teacher.name, option.to_string(), option);
+                                            }
+                                        });
                                 });
 
                                 List::new("Turmas").show_vec(
@@ -63,24 +81,6 @@ impl eframe::App for RulesApp {
                                             });
                                     },
                                 );
-
-                                // egui::Grid::new(format!("grades_{lab_idx}_{class_idx}_{teacher_idx}")).show(ui, |ui| {
-                                //     let mut to_remove = None;
-                                //     for (i, grade) in teacher.grades.iter_mut().enumerate() {
-
-                                //         if ui.button("✖").clicked() {
-                                //             to_remove = Some(i);
-                                //         }
-                                //         ui.end_row();
-                                //     }
-                                //     if let Some(i) = to_remove {
-                                //         teacher.grades.remove(i);
-                                //     }
-
-                                //     if ui.button("Add Grade").clicked() {
-                                //         teacher.grades.push(String::new());
-                                //     }
-                                // });
                             });
                         })
                     });
