@@ -1,7 +1,7 @@
 use askama::Template;
 
 use crate::school::{ClassRef, School, SlottedClass, Teacher};
-use std::{cmp::Ordering, collections::BTreeMap};
+use std::collections::BTreeMap;
 
 #[derive(Debug)]
 struct TeacherSchedule {
@@ -21,14 +21,14 @@ struct Tabulated {
     schedules: Vec<Schedule>,
 }
 
-fn group_by<D, K: Eq + std::hash::Hash + Ord, O>(data: Vec<D>, get_key: impl Fn(&D) -> K, data_out: impl Fn(D) -> O) -> Vec<(K, Vec<O>)> {
+fn group_by<D, K: Ord>(data: Vec<D>, get_key: impl Fn(&D) -> K) -> Vec<(K, Vec<D>)> {
     let mut groups: BTreeMap<K, Vec<_>> = BTreeMap::new();
     for item in data {
         let k = get_key(&item);
         if groups.contains_key(&k) {
-            groups.get_mut(&k).unwrap().push(data_out(item));
+            groups.get_mut(&k).unwrap().push(item);
         } else {
-            groups.insert(k, vec![]);
+            groups.insert(k, vec![item]);
         }
     }
     let mut groups = groups.into_iter().collect::<Vec<_>>();
@@ -36,38 +36,46 @@ fn group_by<D, K: Eq + std::hash::Hash + Ord, O>(data: Vec<D>, get_key: impl Fn(
     groups
 }
 
-fn sorted_by<T>(mut v: Vec<T>, ordering: impl FnMut(&T, &T) -> Ordering) -> Vec<T> {
-    v.sort_by(ordering);
-    v
-}
-
 fn tabulate(school: &School, data: Vec<(String, Vec<SlottedClass>)>) -> Tabulated {
-    let schedules = data
-        .into_iter()
-        .map(|(lab_name, sc)| Schedule {
-            lab_name,
-            teachers: group_by(sc, |d| school.classes.get(d.class).unwrap().teacher, |d| d)
-                .into_iter()
-                .filter(|t| t.1.len() > 0)
-                .map(|(id, sl_cl)| TeacherSchedule {
-                    teacher_name: school.get::<&Teacher>(id).name.clone(),
-                    grades: sorted_by(school.slots.iter().collect::<Vec<_>>(), |a, b| a.1.cmp(b.1))
-                        .into_iter()
-                        .map(|(slot_id, _)| slot_id)
-                        .map(|slot_id| {
-                            sl_cl.iter().find_map(|sl_cl| {
-                                if sl_cl.slot == *slot_id {
-                                    Some(school.get::<ClassRef>(sl_cl.class).grade.name.clone())
-                                } else {
-                                    None
-                                }
-                            })
-                        })
-                        .collect(),
-                })
-                .collect(),
-        })
-        .collect();
+    let mut schedules = Vec::new();
+
+    for (lab_name, slotted_classes) in data {
+        let mut teachers = Vec::new();
+
+        let grouped = group_by(slotted_classes, |slotted| {
+            school.classes.get(slotted.class).unwrap().teacher
+        });
+
+        for (teacher_id, slotted_classes) in grouped {
+            if slotted_classes.len() == 0 {
+                continue;
+            }
+
+            // Create a sorted list of slots
+            let mut slots: Vec<_> = school.slots.iter().collect();
+            slots.sort_by(|a, b| a.1.cmp(b.1));
+
+            let mut grades = Vec::new();
+            for (slot_id, _) in slots {
+                let mut found = None;
+                for sl in &slotted_classes {
+                    if sl.slot == *slot_id {
+                        found = Some(school.get::<ClassRef>(sl.class).grade.name.clone());
+                        break;
+                    }
+                }
+                grades.push(found);
+            }
+
+            teachers.push(TeacherSchedule {
+                teacher_name: school.get::<&Teacher>(teacher_id).name.clone(),
+                grades,
+            });
+        }
+
+        schedules.push(Schedule { lab_name, teachers });
+    }
+
     Tabulated { schedules }
 }
 

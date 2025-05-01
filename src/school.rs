@@ -133,6 +133,12 @@ impl School {
             retain
         });
     }
+    pub fn flatten<'a, Raw, Flat>(&'a self, raw: &'a Raw) -> Flat
+    where
+        Self: Store<'a, Flat, Inner = Raw>,
+    {
+        Store::flatten(self, raw)
+    }
 }
 
 impl FromStr for Time {
