@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Laboratórios</title>
+</head>
+
+<body>
+    {% for table in schedules %}
+    <div>
+        <h1>{{ table.lab_name }}</h1>
+        <table>
+            <tr>
+                <th>Professor</th>
+                <th colspan="6">Segunda</th>
+                <th colspan="6">Terça</th>
+                <th colspan="6">Quarta</th>
+                <th colspan="6">Quinta</th>
+                <th colspan="6">Sexta</th>
+            </tr>
+            {% for teacher in table.teachers %}
+            <tr>
+                <td>{{ teacher.teacher_name }}</td>
+                {% for class in teacher.grades %}
+                {% if let Some(class) = class %}
+                <td>
+                    {{ class }}
+                </td>
+                {% else %}
+                <td></td>
+                {% endif %}
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+    {% endfor %}
+</body>
+
+<style>
+    body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f9f9f9;
+        color: #333;
+        margin: 2rem;
+    }
+
+    h1 {
+        font-size: 1.5rem;
+        border-bottom: 2px solid #ccc;
+        padding-bottom: 0.3rem;
+        margin-top: 2rem;
+        color: #2c3e50;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 1rem;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+        background-color: white;
+        table-layout: fixed;
+    }
+
+    th,
+    td {
+        border: 1px solid #ddd;
+        padding: 0.5rem;
+        text-align: center;
+        overflow-wrap: break-word;
+        word-wrap: break-word;
+    }
+
+    th:first-child,
+    td:first-child {
+        width: 150px;
+        /* Fixed width for the first column */
+        font-weight: bold;
+        background-color: #f7f7f7;
+    }
+
+    th {
+        background-color: #f0f0f0;
+        font-weight: 600;
+    }
+
+    tr:nth-child(even) td {
+        background-color: #fafafa;
+    }
+
+    tr:hover td {
+        background-color: #f1f7ff;
+    }
+
+    td:not(:first-child):not(:empty) {
+        background-color: rgb(189, 255, 194) !important;
+    }
+</style>
+
+
+</html>
