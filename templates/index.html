@@ -116,6 +116,43 @@
         background-color: rgb(189, 255, 194) !important;
     }
 
+    td:first-child,
+    td:nth-child(7),
+    td:nth-child(13),
+    td:nth-child(19),
+    td:nth-child(25),
+    th:nth-child(7),
+    td:nth-child(31),
+    th:nth-child(31),
+    th:nth-child(13),
+    th:nth-child(19),
+    th:nth-child(25) {
+        border-right: 1px solid rgb(169, 169, 169);
+    }
+
+    @media print {
+        table * {
+            font-size: 10px;
+        }
+
+        th:first-child,
+        td:first-child {
+            width: 60px;
+
+        }
+
+        body {
+            background-color: unset;
+            margin: 0;
+            padding: 0;
+        }
+
+        td,
+        th {
+            padding: 0.1rem;
+        }
+    }
+
     .errors,
     .warnings {
         border-radius: 10px;
