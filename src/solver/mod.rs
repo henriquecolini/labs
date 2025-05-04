@@ -3,10 +3,10 @@ pub mod solution;
 
 use crate::{
     rules::Rules,
-    school::{Class, ClassRef, Grade, Laboratory, School, Subject, Teacher},
+    school::{Class, ClassRef, Grade, Laboratory, School, Slot, Subject, Teacher, Time},
 };
 use solution::{Error, LabSlottedClass, Solution, Warning};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct LabSlotId {
@@ -56,7 +56,11 @@ impl<'a> backtrack::State<Context> for State<'a> {
 #[derive(Debug)]
 pub struct SolveError;
 
-fn solve_for(school: &School, mut classes: Vec<(usize, Vec<usize>)>) -> Solution {
+fn solve_for(
+    school: &School,
+    mut classes: Vec<(usize, Vec<usize>)>,
+    forbidden_times: &HashMap<usize, Vec<Time>>,
+) -> Solution {
     let mut solution = Solution {
         slotted: vec![],
         errors: vec![],
@@ -78,6 +82,13 @@ fn solve_for(school: &School, mut classes: Vec<(usize, Vec<usize>)>) -> Solution
                     labs.iter()
                         .take(relax)
                         .map(move |&lab| LabSlotId { lab, slot })
+                        .filter(|LabSlotId { lab, slot }| {
+                            let slot: &Slot = school.get(*slot);
+                            !forbidden_times
+                                .get(lab)
+                                .map(|v| v.contains(&slot.time))
+                                .unwrap_or(false)
+                        })
                 })
                 .collect();
             if slots.len() > 0 {
@@ -140,6 +151,16 @@ fn solve_for(school: &School, mut classes: Vec<(usize, Vec<usize>)>) -> Solution
 
 pub fn solve(school: &School, rules: &Rules) -> Solution {
     let mut classes = vec![];
+    let mut forbidden = HashMap::new();
+    for (lab_name, times) in rules.forbidden_times.iter() {
+        let Some(lab_id) = school.labs.find_key(&Laboratory {
+            name: lab_name.clone(),
+        }) else {
+            eprintln!("Lab does not exist: {}", lab_name);
+            continue;
+        };
+        forbidden.insert(lab_id, times.clone());
+    }
     for class in &rules.classes {
         let Some(subject_id) = school.subjects.find_key(&Subject {
             name: class.subject.clone(),
@@ -185,5 +206,5 @@ pub fn solve(school: &School, rules: &Rules) -> Solution {
             }
         }
     }
-    solve_for(school, classes)
+    solve_for(school, classes, &forbidden)
 }

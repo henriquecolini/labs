@@ -140,19 +140,24 @@ impl eframe::App for RulesApp {
             });
         egui::CentralPanel::default().show(ctx, |ui| {
             egui::ScrollArea::vertical().show(ui, |ui| {
-                // List::new("Laboratório").wide().show_vec_default(
-                //     ui,
-                //     &mut self.rules.labs,
-                //     |ui, (lab_idx, lab)| {
-                //         ui.vertical(|ui| {
-                //             ui.horizontal(|ui| {
-                //                 ui.label("Lab.");
-                //                 ui.text_edit_singleline(&mut lab.name);
-                //             });
-                //         });
-                //         ui.end_row();
-                //     },
-                // );
+                for lab in self.labs.iter() {
+                    ui.heading(lab);
+                    let times = self.rules.forbidden_times.entry(lab.clone()).or_insert_with(|| vec![]);
+                    List::new("Horário Proibido").show_vec(ui, times, || *self.times.first().unwrap_or(&Time(0,0)), |ui, (time_idx, time)| {
+                        egui::ComboBox::from_id_salt(format!("time_{lab}_{time_idx}"))
+                            .selected_text(time.to_string())
+                            .show_ui(ui, |ui| {
+                                for option in &self.times {
+                                    ui.selectable_value(
+                                        time,
+                                        *option,
+                                        format!("{option}"),
+                                    );
+                                }
+                            });
+                    });
+                }
+                ui.heading("Aulas");
                 List::new("Matéria").wide().show_vec_default(
                     ui,
                     &mut self.rules.classes,

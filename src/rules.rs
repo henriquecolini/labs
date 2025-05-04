@@ -1,4 +1,5 @@
 use std::{
+    collections::HashMap,
     fs::{self, File},
     io::BufReader,
     path::Path,
@@ -11,6 +12,7 @@ use crate::school::Time;
 #[derive(Debug, Default, Deserialize, Serialize)]
 pub struct Rules {
     pub classes: Vec<ClassRules>,
+    pub forbidden_times: HashMap<String, Vec<Time>>,
 }
 
 #[derive(Debug, Default, Deserialize, Serialize)]
@@ -29,7 +31,6 @@ pub struct TeacherRules {
 pub struct GradeRules {
     pub name: String,
     pub labs: Vec<String>,
-    pub forbidden_times: Vec<Time>,
 }
 
 impl Rules {
