@@ -1,16 +1,17 @@
 /// Used to solve a backtracking problem
-pub trait State<'a>: Sized {
-    type Context: 'a;
-
+pub trait State<Context>: Sized {
     /// Get all the successive states from the current state
-    fn successors(&self, ctx: &Self::Context) -> impl Iterator<Item = Self>;
+    fn successors(&self, ctx: &Context) -> impl Iterator<Item = Self>;
 
     /// Check if the state is the final/goal state. It must also be valid.
-    fn is_goal(&self, ctx: &Self::Context) -> bool;
+    fn is_goal(&self, ctx: &Context) -> bool;
 }
 
 /// Solve the backtracking problem using the specified state (recursive)
-pub fn solve<'a, C: State<'a>>(ctx: &C::Context, state: C) -> Option<C> {
+pub fn solve<St, Ct>(ctx: &Ct, state: St) -> Option<St>
+where
+    St: State<Ct>,
+{
     // Return once we found the goal
     if state.is_goal(ctx) {
         return Some(state);

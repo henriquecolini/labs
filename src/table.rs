@@ -29,13 +29,22 @@ impl<T> Table<T> {
         self.inc += 1;
         key
     }
-    pub fn insert_unique(&mut self, t: T) -> usize
+    pub fn find_key(&self, value: &T) -> Option<usize>
     where
         T: PartialEq,
     {
-        match self.iter().find(|(_, r)| r == &&t) {
-            Some((i, _)) => *i,
-            None => self.insert(t),
+        match self.iter().find(|(_, r)| r == &value) {
+            Some((i, _)) => Some(*i),
+            None => None,
+        }
+    }
+    pub fn insert_unique(&mut self, value: T) -> usize
+    where
+        T: PartialEq,
+    {
+        match self.find_key(&value) {
+            Some(i) => i,
+            None => self.insert(value),
         }
     }
     pub fn retain(&mut self, f: impl FnMut(&usize, &mut T) -> bool) {

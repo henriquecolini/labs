@@ -68,6 +68,11 @@ pub struct SlottedClassRef<'a> {
     pub class: ClassRef<'a>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct Laboratory {
+    pub name: String,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct School {
     pub slots: Table<Slot>,
@@ -76,6 +81,7 @@ pub struct School {
     pub subjects: Table<Subject>,
     pub classes: Table<Class>,
     pub slotted_classes: Table<SlottedClass>,
+    pub labs: Table<Laboratory>,
 }
 
 #[allow(dead_code)]
@@ -110,6 +116,9 @@ impl School {
     pub fn slotted_classes(&self) -> impl Iterator<Item = SlottedClassRef> {
         self.iter()
     }
+    pub fn labs(&self) -> impl Iterator<Item = &Laboratory> {
+        self.iter()
+    }
     pub fn retain_classes(&mut self, predicate: impl Fn(ClassRef) -> bool) {
         self.classes.retain(|k, v| {
             let cr = ClassRef {
@@ -138,6 +147,17 @@ impl School {
         Self: Store<'a, Flat, Inner = Raw>,
     {
         Store::flatten(self, raw)
+    }
+    pub fn slots_of(&self, class_id: usize) -> impl Iterator<Item = usize> + use<'_> {
+        self.slotted_classes.iter().filter_map(
+            move |(_, &SlottedClass { slot, class })| {
+                if class == class_id {
+                    Some(slot)
+                } else {
+                    None
+                }
+            },
+        )
     }
 }
 
@@ -217,6 +237,16 @@ impl<'a> Store<'a, &'a Subject> for School {
     }
 }
 
+impl<'a> Store<'a, &'a Laboratory> for School {
+    type Inner = Laboratory;
+    fn table(&self) -> &Table<Self::Inner> {
+        &self.labs
+    }
+    fn flatten(&'a self, item: &'a Self::Inner) -> &'a Laboratory {
+        item
+    }
+}
+
 impl<'a> Store<'a, ClassRef<'a>> for School {
     type Inner = Class;
     fn table(&self) -> &Table<Self::Inner> {
@@ -269,6 +299,12 @@ impl Display for Grade {
 }
 
 impl Display for Subject {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name)
+    }
+}
+
+impl Display for Laboratory {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.name)
     }

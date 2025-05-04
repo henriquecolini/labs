@@ -1,21 +1,29 @@
-use std::{fs, path::Path};
+use std::{
+    fs::{self, File},
+    io::BufReader,
+    path::Path,
+};
 
 use encoding_rs::WINDOWS_1252;
 use scraper::{Html, Selector};
 
 use crate::{
-    school::{Class, Grade, School, Slot, SlottedClass, Subject, Teacher, DAYS},
+    school::{Class, Grade, Laboratory, School, Slot, SlottedClass, Subject, Teacher, DAYS},
     table::Table,
 };
 
-pub fn load_school(schedule_path: impl AsRef<Path>) -> anyhow::Result<School> {
+pub fn load_school(
+    school_path: impl AsRef<Path>,
+    labs_path: impl AsRef<Path>,
+) -> anyhow::Result<School> {
     let mut teachers = Table::new();
     let mut grades = Table::new();
     let mut subjects = Table::new();
     let mut classes = Table::new();
     let mut slots = Table::new();
     let mut slotted_classes = Table::new();
-    let bytes = fs::read(schedule_path)?;
+    let mut labs = Table::new();
+    let bytes = fs::read(school_path)?;
     let (cow, _, had_errors) = WINDOWS_1252.decode(&bytes);
     if had_errors {
         eprintln!("Warning: some characters could not be decoded correctly.");
@@ -71,6 +79,10 @@ pub fn load_school(schedule_path: impl AsRef<Path>) -> anyhow::Result<School> {
             }
         }
     }
+    let lab_names: Vec<String> = serde_json::from_reader(BufReader::new(File::open(labs_path)?))?;
+    for name in lab_names {
+        labs.insert_unique(Laboratory { name });
+    }
     Ok(School {
         teachers,
         grades,
@@ -78,15 +90,6 @@ pub fn load_school(schedule_path: impl AsRef<Path>) -> anyhow::Result<School> {
         classes,
         slots,
         slotted_classes,
+        labs,
     })
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::sources::html::load_school;
-    #[test]
-    pub fn foo() {
-        let school = load_school("input/turmas.html").unwrap();
-        assert_eq!(school.slotted_classes().count(), 690);
-    }
 }

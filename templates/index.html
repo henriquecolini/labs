@@ -7,11 +7,28 @@
 </head>
 
 <body>
+    {% if errors.len() > 0 %}
+    <div class="errors">
+        {% for error in errors %}
+        <p class="error">
+            {{ error }}
+        </p>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% if warnings.len() > 0 %}
+    <div class="warnings">
+        {% for warning in warnings %}
+        <p class="warning">
+            {{ warning }}
+        </p>
+        {% endfor %}
+    </div>
+    {% endif %}
     {% for table in schedules %}
     <div>
         <h1>{{ table.lab_name }}</h1>
 
-        {% if let Ok(teachers) = table.teachers %}
         <table>
             <tr>
                 <th>Professor</th>
@@ -21,7 +38,7 @@
                 <th colspan="6">Quinta</th>
                 <th colspan="6">Sexta</th>
             </tr>
-            {% for teacher in teachers %}
+            {% for teacher in table.teachers %}
             <tr>
                 <td>{{ teacher.teacher_name }}</td>
                 {% for class in teacher.grades %}
@@ -36,12 +53,6 @@
             </tr>
             {% endfor %}
         </table>
-        {% else %}
-        <p class="error">
-            O sistema não conseguiu encontrar uma agenda possível para "{{ table.lab_name }}" dadas as regras
-            disponibilizadas.
-        </p>
-        {% endif %}
     </div>
     {% endfor %}
 </body>
@@ -105,8 +116,32 @@
         background-color: rgb(189, 255, 194) !important;
     }
 
-    p.error {
-        color: red
+    .errors,
+    .warnings {
+        border-radius: 10px;
+        padding: 1em;
+        margin: 10px 0;
+    }
+
+    .errors p,
+    .warnings p {
+        margin: 0 .5em;
+    }
+
+    .errors {
+        background-color: #ffe6ea;
+    }
+
+    .errors p {
+        color: rgb(165, 8, 34)
+    }
+
+    .warnings {
+        background-color: #ffeecf;
+    }
+
+    .warnings p {
+        color: rgb(209, 114, 5)
     }
 </style>
 

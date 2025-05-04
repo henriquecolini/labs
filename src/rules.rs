@@ -9,9 +9,8 @@ use serde::{Deserialize, Serialize};
 use crate::school::Time;
 
 #[derive(Debug, Default, Deserialize, Serialize)]
-pub struct TeacherRules {
-    pub name: String,
-    pub grades: Vec<String>,
+pub struct Rules {
+    pub classes: Vec<ClassRules>,
 }
 
 #[derive(Debug, Default, Deserialize, Serialize)]
@@ -21,25 +20,29 @@ pub struct ClassRules {
 }
 
 #[derive(Debug, Default, Deserialize, Serialize)]
-pub struct LabRules {
+pub struct TeacherRules {
     pub name: String,
-    pub classes: Vec<ClassRules>,
-    pub forbidden_times: Vec<Time>,
+    pub grades: Vec<GradeRules>,
 }
 
 #[derive(Debug, Default, Deserialize, Serialize)]
-pub struct Rules {
-    pub labs: Vec<LabRules>,
+pub struct GradeRules {
+    pub name: String,
+    pub labs: Vec<String>,
+    pub forbidden_times: Vec<Time>,
 }
 
-impl LabRules {
+impl Rules {
     pub fn flatten<'a>(&'a self) -> impl Iterator<Item = (&'a str, &'a str, &'a str)> {
         self.classes.iter().flat_map(|class| {
             class.teachers.iter().flat_map(|teacher| {
-                teacher
-                    .grades
-                    .iter()
-                    .map(|grade| (teacher.name.as_ref(), grade.as_ref(), class.subject.as_ref()))
+                teacher.grades.iter().map(|grade| {
+                    (
+                        teacher.name.as_ref(),
+                        grade.name.as_ref(),
+                        class.subject.as_ref(),
+                    )
+                })
             })
         })
     }
