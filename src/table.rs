@@ -53,4 +53,10 @@ impl<T> Table<T> {
     pub fn values(&self) -> Values<'_, usize, T> {
         self.m.values()
     }
+    pub fn contains(&self, needle: &T) -> bool
+    where
+        T: PartialEq,
+    {
+        self.m.values().any(|v| v == needle)
+    }
 }

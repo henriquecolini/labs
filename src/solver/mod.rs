@@ -7,13 +7,19 @@ use crate::{
 use backtrack::State;
 use std::collections::BTreeMap;
 
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+struct SlotId(usize);
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+struct ClassId(usize);
+
 struct Mapping<'a> {
-    map: BTreeMap<usize, usize>,
-    remaining: &'a [usize],
+    map: BTreeMap<SlotId, ClassId>,
+    remaining: &'a [ClassId],
 }
 
 struct Context<'a> {
-    slots: &'a [usize],
+    school: &'a School,
+    slots: &'a [SlotId],
 }
 
 impl<'a> State<'a> for Mapping<'a> {
@@ -24,15 +30,17 @@ impl<'a> State<'a> for Mapping<'a> {
             [head, remaining @ ..] => Some(
                 ctx.slots
                     .iter()
-                    .filter(|lab_slot| !self.map.contains_key(lab_slot))
-                    .map(|lab_slot| {
+                    .filter(|slot| !self.map.contains_key(slot))
+                    .filter(|&&SlotId(slot)| {
+                        ctx.school.slotted_classes.contains(&SlottedClass {
+                            slot,
+                            class: head.0,
+                        })
+                    })
+                    .map(|slot| {
                         let mut map = self.map.clone();
-                        map.insert(lab_slot.clone(), *head);
-                        Mapping {
-                            map,
-                            remaining,
-                            ..*self
-                        }
+                        map.insert(slot.clone(), *head);
+                        Mapping { map, remaining }
                     }),
             )
             .into_iter()
@@ -46,14 +54,20 @@ impl<'a> State<'a> for Mapping<'a> {
     }
 }
 
-pub fn organize(school: &School) -> Option<Vec<SlottedClass>> {
-    let classes = school.classes.keys().cloned().collect::<Vec<_>>();
-    let slots = school.slots.keys().map(|slot| *slot).collect::<Vec<_>>();
+#[derive(Debug)]
+pub struct SolveError;
+
+pub fn organize(school: &School) -> Result<Vec<SlottedClass>, SolveError> {
+    let classes: Vec<_> = school.classes.keys().map(|class| ClassId(*class)).collect();
+    let slots: Vec<_> = school.slots.keys().map(|slot| SlotId(*slot)).collect();
     if classes.len() > slots.len() {
-        return None;
+        return Err(SolveError);
     }
     backtrack::solve(
-        &Context { slots: &slots },
+        &Context {
+            school,
+            slots: &slots,
+        },
         Mapping {
             map: BTreeMap::new(),
             remaining: &classes,
@@ -62,12 +76,16 @@ pub fn organize(school: &School) -> Option<Vec<SlottedClass>> {
     .map(|s| {
         s.map
             .into_iter()
-            .map(|(slot, class)| SlottedClass { slot, class })
+            .map(|(SlotId(slot), ClassId(class))| SlottedClass { slot, class })
             .collect::<Vec<_>>()
     })
+    .ok_or(SolveError)
 }
 
-pub fn solve(rules: &Rules, school: &School) -> Vec<(String, Vec<SlottedClass>)> {
+pub fn solve(
+    rules: &Rules,
+    school: &School,
+) -> Vec<(String, Result<Vec<SlottedClass>, SolveError>)> {
     let mut organized_labs = vec![];
     for lab in rules.labs.iter() {
         let mut school = school.clone();
@@ -81,7 +99,7 @@ pub fn solve(rules: &Rules, school: &School) -> Vec<(String, Vec<SlottedClass>)>
             })
         });
         school.retain_slots(|s| !lab.forbidden_times.contains(&s.time));
-        let organized = organize(&school).expect("No solution");
+        let organized = organize(&school);
         organized_labs.push((lab.name.to_owned(), organized));
     }
     organized_labs

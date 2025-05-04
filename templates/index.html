@@ -10,6 +10,8 @@
     {% for table in schedules %}
     <div>
         <h1>{{ table.lab_name }}</h1>
+
+        {% if let Ok(teachers) = table.teachers %}
         <table>
             <tr>
                 <th>Professor</th>
@@ -19,7 +21,7 @@
                 <th colspan="6">Quinta</th>
                 <th colspan="6">Sexta</th>
             </tr>
-            {% for teacher in table.teachers %}
+            {% for teacher in teachers %}
             <tr>
                 <td>{{ teacher.teacher_name }}</td>
                 {% for class in teacher.grades %}
@@ -34,6 +36,12 @@
             </tr>
             {% endfor %}
         </table>
+        {% else %}
+        <p class="error">
+            O sistema não conseguiu encontrar uma agenda possível para "{{ table.lab_name }}" dadas as regras
+            disponibilizadas.
+        </p>
+        {% endif %}
     </div>
     {% endfor %}
 </body>
@@ -95,6 +103,10 @@
 
     td:not(:first-child):not(:empty) {
         background-color: rgb(189, 255, 194) !important;
+    }
+
+    p.error {
+        color: red
     }
 </style>
 
